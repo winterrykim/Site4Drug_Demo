@@ -18,27 +18,8 @@ Inference-only distribution repo for Site4Drug. This repository keeps the succes
 - Output artifacts
 - Bulky benchmark assets
 
-## Installation
-Base install:
-
-```bash
-python -m pip install -e .
-```
-
-Optional demo dependencies:
-
-```bash
-python -m pip install -e .[demo]
-```
-
-Optional notebook dependencies:
-
-```bash
-python -m pip install -e .[notebooks]
-```
-
-## Quick Setup
-If you want the old ergonomic setup flow back, the new repo supports it.
+## Setup
+Full setup for CLI, demo, and notebooks:
 
 ```bash
 cd <repo-root>
@@ -49,23 +30,22 @@ python -m pip install -e .[demo,notebooks]
 source .tinker.env
 ```
 
-If you only need CLI inference and not the demo or notebooks:
+`./scripts/setup_tinker_key.sh` prompts you for `TINKER_API_KEY` and writes it to `.tinker.env` with restricted permissions.
+
+If you only need CLI inference:
 
 ```bash
-cd <repo-root>
-python3 -m venv .venv
-source .venv/bin/activate
 python -m pip install -e .
 ./scripts/setup_tinker_key.sh
 source .tinker.env
 ```
 
-## Environment
-The inference path expects a Tinker API key in the environment for normal runs:
+Important:
 
-```bash
-export TINKER_API_KEY=...
-```
+- The demo requires `TINKER_API_KEY`.
+- CLI inference requires `TINKER_API_KEY`.
+- Notebook inference requires `TINKER_API_KEY`.
+- `--use-base-model` only skips the fine-tuned checkpoint. It still uses Tinker for base-model inference.
 
 Optional environment variables:
 
@@ -74,79 +54,14 @@ Optional environment variables:
 - `SITE4DRUG_MUSITEDEEP_API_BASE_URL`
   Overrides the default MusiteDeep API base URL.
 
-Important:
-
-- The demo requires `TINKER_API_KEY`.
-- CLI inference also requires `TINKER_API_KEY`.
-- Notebook inference also requires `TINKER_API_KEY`.
-- `--use-base-model` only skips the fine-tuned checkpoint. It still uses a Tinker sampling client for base-model inference.
-- This inference-only repo does not ship the old training-data preparation workflow, so there is no training path here to contrast against Tinker usage.
-
-## CLI Overview
-The main entrypoint is:
+## Run
+CLI help:
 
 ```bash
 predict --help
 ```
 
-The optional Gradio demo is:
-
-```bash
-demo
-```
-
-Helper scripts are also available:
-
-- `./scripts/setup_tinker_key.sh`
-  Prompts for `TINKER_API_KEY` and writes a locked-down `.tinker.env`.
-- `./scripts/run_gradio_demo.sh`
-  Activates `.venv` if present, loads `.tinker.env` if present, and launches the Gradio demo.
-
-## Demo First
-If you want the old repo’s demo-first flow, this is the equivalent:
-
-```bash
-./scripts/run_gradio_demo.sh
-```
-
-The launcher:
-
-- activates `.venv` if present
-- loads `.tinker.env` if present
-- runs `python -m site4drug_inference.demo.gradio_demo`
-
-The app tries ports `7860` through `7870`. To force a port:
-
-```bash
-SITE4DRUG_DEMO_PORT=7890 ./scripts/run_gradio_demo.sh
-```
-
-You can also launch the installed console entrypoint directly:
-
-```bash
-demo
-```
-
-## How Sequence Input Works
-`predict` resolves the input sequence in this order:
-
-1. `--sequence-file`
-   Reads a FASTA file or plain-text sequence file. This takes precedence if multiple input modes are supplied.
-2. `--interactive`
-   Prompts for the label and sequence in the terminal.
-3. `--sequence`
-   Takes the raw sequence directly from the CLI.
-4. `--uniprot`
-   If no sequence was provided, the CLI attempts sequence resolution from the UniProt label/accession unless `--no-online-lookup` is set.
-
-Notes:
-
-- `--sequence-file` accepts either FASTA or plain text.
-- If the FASTA header is present and `--uniprot` is still `UNKNOWN`, the first token of the FASTA header is used as the run label.
-- Raw sequences are normalized before inference: whitespace is removed, residues are uppercased, and terminal `*` characters are stripped.
-
-## Common Prediction Examples
-Run with a raw sequence directly on the command line:
+Run with a raw sequence:
 
 ```bash
 predict \
@@ -166,42 +81,37 @@ predict \
   --top-k 5
 ```
 
-Run by UniProt lookup only:
+Launch the demo:
 
 ```bash
-predict \
-  --uniprot P29996 \
-  --mode auto \
-  --top-k 5
+./scripts/run_gradio_demo.sh
 ```
 
-Write outputs to a custom directory:
+The launcher activates `.venv` if present, loads `.tinker.env` if present, and runs `python -m site4drug_inference.demo.gradio_demo`.
+
+To force a demo port:
 
 ```bash
-predict \
-  --uniprot P29996 \
-  --sequence-file antigen.fasta \
-  --output-dir /tmp/site4drug_runs
+SITE4DRUG_DEMO_PORT=7890 ./scripts/run_gradio_demo.sh
 ```
 
-Disable plot generation:
+## How Sequence Input Works
+`predict` resolves the input sequence in this order:
 
-```bash
-predict \
-  --uniprot P29996 \
-  --sequence-file antigen.fasta \
-  --no-plot
-```
+1. `--sequence-file`
+   Reads a FASTA file or plain-text sequence file. This takes precedence if multiple input modes are supplied.
+2. `--interactive`
+   Prompts for the label and sequence in the terminal.
+3. `--sequence`
+   Takes the raw sequence directly from the CLI.
+4. `--uniprot`
+   If no sequence was provided, the CLI attempts sequence resolution from the UniProt label/accession unless `--no-online-lookup` is set.
 
-Run with self-consistency voting:
+Notes:
 
-```bash
-predict \
-  --uniprot P29996 \
-  --sequence-file antigen.fasta \
-  --self-consistency-k 3 \
-  --sampling-seed 42
-```
+- `--sequence-file` accepts either FASTA or plain text.
+- If the FASTA header is present and `--uniprot` is still `UNKNOWN`, the first token of the FASTA header is used as the run label.
+- Raw sequences are normalized before inference: whitespace is removed, residues are uppercased, and terminal `*` characters are stripped.
 
 ## Default Behavior
 The committed repo keeps the current successful default path:
