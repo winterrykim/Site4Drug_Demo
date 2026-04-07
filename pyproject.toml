@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "site4drug-inference"
+version = "0.1.0"
+description = "Inference-only reproducible distribution for Site4Drug"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "tinker",
+  "tinker-cookbook",
+  "pandas>=2.0",
+  "pyarrow>=14.0",
+  "numpy>=1.24",
+  "protobuf>=5,<6",
+  "matplotlib>=3.8",
+  "requests>=2.31",
+  "biopython>=1.76",
+]
+
+[project.optional-dependencies]
+demo = [
+  "gradio>=5.0",
+]
+notebooks = [
+  "nbconvert>=7.0",
+  "nbformat>=5.10",
+  "ipykernel>=6.0",
+  "ipywidgets>=8.0",
+]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+predict = "site4drug_inference.demo.predict_site:main"
+demo = "site4drug_inference.demo.gradio_demo:launch_app"
+
+[tool.setuptools.packages.find]
+include = ["site4drug_inference*"]
+
+[tool.setuptools.package-data]
+site4drug_inference = [
+  "common/musitedeep_model_map.json",
+  "demo/report_templates/clean_blue_static/*",
+]

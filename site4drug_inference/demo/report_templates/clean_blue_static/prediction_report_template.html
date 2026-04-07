@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <title>Site4Drug Prediction Report</title>
+  <style>
+    :root {
+      --paper: #ffffff;
+      --paper-soft: #f7fbff;
+      --ink: #17293b;
+      --ink-soft: #37526d;
+      --line: #c9d7e6;
+      --line-strong: #adc2d8;
+      --accent: #245a88;
+      --accent-soft: #eaf3fc;
+      --ok: #1f6f37;
+      --shadow: 0 4px 12px rgba(20, 57, 92, 0.08);
+      --radius-lg: 12px;
+      --radius-md: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "Avenir", "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.5;
+      min-width: 1240px;
+      padding: 1.6rem 0 2.4rem;
+    }
+
+    .report {
+      width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      gap: 0.9rem;
+    }
+
+    .hero,
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 1.1rem 1.3rem 1.2rem;
+      border-top: 3px solid var(--accent);
+    }
+
+    .kicker {
+      margin: 0;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0.35rem 0 0.2rem;
+      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
+      font-size: 2.4rem;
+      line-height: 1.1;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 78ch;
+      color: var(--ink-soft);
+    }
+
+    .meta-grid {
+      margin-top: 1rem;
+      display: grid;
+      gap: 0.6rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .meta-item {
+      background: var(--paper-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.55rem 0.65rem;
+    }
+
+    .meta-label {
+      display: block;
+      font-size: 0.73rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #406386;
+      margin-bottom: 0.15rem;
+      font-weight: 700;
+    }
+
+    .meta-value {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #16324c;
+      word-break: break-word;
+    }
+
+    .panel {
+      padding: 1.15rem 1.2rem;
+    }
+
+    .panel h2 {
+      margin: 0 0 0.55rem;
+      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
+      font-size: 1.55rem;
+      line-height: 1.2;
+      color: var(--accent);
+    }
+
+    .panel p {
+      margin: 0.25rem 0 0.65rem;
+      color: var(--ink-soft);
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 0.6rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--accent-soft);
+      color: #154166;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      white-space: nowrap;
+    }
+
+    tr:hover td {
+      background: #f4f9ff;
+    }
+
+    code {
+      font-family: "SF Mono", "Menlo", "Consolas", monospace;
+      font-size: 0.88em;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      color: #204a72;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 1.1rem;
+    }
+
+    .legend {
+      margin-top: 0.5rem;
+      color: #355473;
+      font-size: 0.9rem;
+      line-height: 1.55;
+      text-wrap: pretty;
+    }
+
+    .legend .nobr {
+      white-space: nowrap;
+    }
+
+    .plot-frame {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--paper);
+    }
+
+    .plot-frame img {
+      width: 100%;
+      display: block;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.12rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(46, 125, 50, 0.3);
+      background: rgba(31, 111, 55, 0.1);
+      color: var(--ok);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+  </style>
+</head>
+<body>
+  <main class="report">
+    <header class="hero">
+      <p class="kicker">Site4Drug</p>
+      <h1>Prediction Report</h1>
+      <div class="meta-grid">
+        <div class="meta-item"><span class="meta-label">Run ID</span><span class="meta-value"><code>20260324_142742_SEQ_idx201.seq5</code></span></div>
+        <div class="meta-item"><span class="meta-label">Run Status</span><span class="meta-value"><span class="status">ok</span></span></div>
+        <div class="meta-item"><span class="meta-label">UniProt / Label</span><span class="meta-value"><code>SEQ_idx201.seq5</code></span></div>
+        <div class="meta-item"><span class="meta-label">Requested Mode</span><span class="meta-value"><code>auto</code></span></div>
+        <div class="meta-item"><span class="meta-label">Recommended Modality</span><span class="meta-value"><code>pocket</code> (0.90)</span></div>
+        <div class="meta-item"><span class="meta-label">Candidate Source</span><span class="meta-value"><code>llm_propose</code></span></div>
+      </div>
+    </header>
+
+    <section class="panel">
+      <h2>Ranked Candidates</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Rank</th><th>ID</th><th>Mode</th><th>Peptide</th><th>Position</th><th>Confidence</th><th>Score</th><th>Source</th><th>Flags</th><th>Reason</th></tr></thead>
+          <tbody><tr><td>1</td><td><code>L_C0005</code></td><td>pocket</td><td><code>LTSTVQLITQLMPF</code></td><td>112-125</td><td>High</td><td>0.82</td><td><code>llm_self_consistency_vote</code></td><td>motif-overlap, self_consistency_votes_2_of_3, span-repaired-from-peptide</td><td>High hydrophobicity (0.571) and no PTM overlap support strong pocket formation; overlaps PS50011 motif but no direct PTM interference.</td></tr><tr><td>2</td><td><code>L_C0003</code></td><td>pocket</td><td><code>EAYVMASVDNPHVC</code></td><td>92-105</td><td>High</td><td>0.75</td><td><code>llm_self_consistency_vote</code></td><td>motif-overlap, self_consistency_votes_3_of_3, span-repaired-from-peptide</td><td>Moderate hydrophobicity (0.5) and no PTM overlap; overlaps PS50011 motif, which may constrain flexibility.</td></tr><tr><td>3</td><td><code>L_C0001</code></td><td>pocket</td><td><code>GEAPNQALLRILKE</code></td><td>26-39</td><td>Moderate</td><td>0.70</td><td><code>llm_self_consistency_vote</code></td><td>self_consistency_votes_3_of_3, span-repaired-from-peptide</td><td>No PTM or motif overlap and moderate hydrophobicity (0.5); low polar fraction may limit solvation.</td></tr><tr><td>4</td><td><code>L_C0004</code></td><td>pocket</td><td><code>GCLLDYVREHKDNI</code></td><td>126-139</td><td>Moderate</td><td>0.60</td><td><code>llm_self_consistency_vote</code></td><td>fuzzy_consensus_clustered, motif-overlap, self_consistency_votes_3_of_3, span-repaired-from-peptide</td><td>Low hydrophobicity (0.286) and motif-overlap reduce pocket plausibility despite no PTM interference.</td></tr><tr><td>5</td><td><code>L_C0002</code></td><td>pocket</td><td><code>REATSPKANKEILD</code></td><td>78-91</td><td>Low</td><td>0.35</td><td><code>llm_self_consistency_vote</code></td><td>PTM-clustered, PTM-dense, PTM-overlap, motif-overlap, self_consistency_votes_3_of_3, span-repaired-from-peptide</td><td>PTM-dense region with overlapping phospho/ubiquitin sites at positions 82, 84, 87 disrupts pocket integrity.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Agent Conclusions</h2>
+      <ul>
+        <li><b>BioAgent:</b> Topology/PTM screen prioritizes biologically accessible regions and downranks constrained segments.</li>
+        <li><b>ChemAgent:</b> PTM and motif overlaps modulate pocket candidacy, favoring hydrophobic, low-PTM regions.</li>
+        <li><b>RiskAgent:</b> Risk review penalizes candidates with stacked flags and highlights uncertainty hotspots.</li>
+        <li><b>DecisionAgent:</b> ok</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>PTM + Motif Summary</h2>
+      <p><b>PTM summary:</b> <code>{'total_sites': 18, 'counts_by_type': {'Ubiquitination': 8, 'Phosphoserine_Phosphothreonine': 6, 'N6-acetyllysine': 3, 'Hydroxyproline': 1}, 'n_masked_positions': 127}</code></p>
+      <p><b>Motif summary:</b> <code>{'total_hits': 3, 'counts_by_motif': {'PS50011': 1, 'PS00107': 1, 'PS00109': 1}}</code></p>
+    </section>
+
+    <section class="panel">
+      <h2>Raw API Outputs</h2>
+      <p><b>MusiteDeep:</b> status=<code>ok</code>, requests=<code>1</code>, artifact=<code>musitedeep_raw.json</code></p>
+      <p><b>MusiteDeep preview:</b> <code>{"querySeq":"MKKGHHHHHHDYDIPTTENLYFQGSGEAPNQALLRILKETEFKKIKVLGSGAFGTVYKGLWIPEGEKVKIPVAIKELREATSPKANKEILDEAYVMASVDNPHVCRLLGICLTSTVQLITQLMPFGCLLDYVREHKDNIGSQYLLNWCVQIAKGMNYLEDRRLVHRDLAARNVLVKTPQHVKITDFGLAKLLGAEEKEYHAEGGKVP...&lt;truncated&gt;</code></p>
+      <p><b>ScanProsite:</b> status=<code>remote_ok</code>, n_hits=<code>3</code>, artifact=<code>scanprosite_raw.xml</code></p>
+      <p><b>ScanProsite preview:</b> <code>&lt;scanprosite_response&gt;
+  &lt;anti-timeout&gt;&lt;/anti-timeout&gt;
+  &lt;matchset xmlns="urn:expasy:scanprosite" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:expasy:scanprosite http://expasy.org/tools/sca...&lt;truncated&gt;</code></p>
+    </section>
+
+    <section class="panel">
+      <h2>Hydropathy + PTM + Candidate Tracks</h2>
+      <div class="plot-frame">
+        <img src="hydropathy_ptm_plot.png" alt="Hydropathy PTM candidate tracks plot">
+      </div>
+      <p class="legend">Legend: candidate bars use <span class="nobr"><b>emerald green=epitope</b></span>, <span class="nobr"><b>steel blue=pocket</b></span>, <span class="nobr"><b>slate gray=other</b></span>; gold annotation marks PTM risk labels (<span class="nobr"><b>PTM overlap</b></span> or <span class="nobr"><b>PTM dense</b></span>); PTM dot markers encode confidence (<span class="nobr"><b>o=high</b></span>, <span class="nobr"><b>^=medium</b></span>, <span class="nobr"><b>x=low</b></span>).</p>
+    </section>
+  </main>
+
+
+</body></html>

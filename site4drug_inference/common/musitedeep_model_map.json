@@ -1,0 +1,40 @@
+{
+  "version": "musitedeep_api_map_v2",
+  "models": [
+    {
+      "ptm_type": "Hydroxyproline",
+      "api_model": "Hydroxyproline",
+      "score_aliases": ["Hydroxyproline"],
+      "residue": "P",
+      "enabled": true
+    },
+    {
+      "ptm_type": "Phosphoserine_Phosphothreonine",
+      "api_model": "Phosphoserine_Phosphothreonine",
+      "score_aliases": ["Phosphoserine", "Phosphothreonine"],
+      "residue": "ST",
+      "enabled": true
+    },
+    {
+      "ptm_type": "Ubiquitination",
+      "api_model": "Ubiquitination",
+      "score_aliases": ["Ubiquitination"],
+      "residue": "K",
+      "enabled": true
+    },
+    {
+      "ptm_type": "N6-acetyllysine",
+      "api_model": "N6-acetyllysine",
+      "score_aliases": ["N6-acetyllysine"],
+      "residue": "K",
+      "enabled": true
+    },
+    {
+      "ptm_type": "Methylarginine",
+      "api_model": "Methylarginine",
+      "score_aliases": ["Methylarginine"],
+      "residue": "R",
+      "enabled": true
+    }
+  ]
+}
