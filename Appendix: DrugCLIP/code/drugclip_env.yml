@@ -1,0 +1,26 @@
+name: drugclip
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy<2
+  - pandas
+  - scipy
+  - scikit-learn
+  - pytorch=2.1.*
+  - pytorch-cuda=11.8
+  - rdkit=2022.09.5
+  - biopython
+  - lmdb
+  - tqdm
+  - tensorboardx
+  - ml-collections
+  - tokenizers
+  - wandb
+  - ninja
+  - pip
+  - pip:
+      - selfies
