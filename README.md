@@ -95,6 +95,40 @@ To force a demo port:
 SITE4DRUG_DEMO_PORT=7890 ./scripts/run_gradio_demo.sh
 ```
 
+## Model Selection
+Use a different fine-tuned checkpoint for inference:
+
+```bash
+predict \
+  --uniprot P29996 \
+  --sequence-file antigen.fasta \
+  --checkpoint tinker://<your-checkpoint-path>
+```
+
+Run the base model directly instead of a fine-tuned checkpoint:
+
+```bash
+predict \
+  --uniprot P29996 \
+  --sequence-file antigen.fasta \
+  --use-base-model \
+  --base-model Qwen/Qwen3-235B-A22B-Instruct-2507
+```
+
+To change the repo-wide defaults, set environment variables before running:
+
+```bash
+export SITE4DRUG_CHECKPOINT='tinker://<your-checkpoint-path>'
+export SITE4DRUG_BASE_MODEL='Qwen/Qwen3-235B-A22B-Instruct-2507'
+```
+
+Notes:
+
+- `--checkpoint` selects the primary fine-tuned checkpoint.
+- `--use-base-model` ignores `--checkpoint` for primary inference.
+- `--base-model` controls which base model is used when `--use-base-model` is active.
+- If checkpoint mode is active, the base model can still be used for repair and panel calls unless you disable those paths explicitly.
+
 ## How Sequence Input Works
 `predict` resolves the input sequence in this order:
 
