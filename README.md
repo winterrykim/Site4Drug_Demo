@@ -64,6 +64,7 @@ predict --help
 Run with a raw sequence:
 
 ```bash
+# `--uniprot` is used as a run label / ID in this example.
 predict \
   --uniprot TEST_SEQ \
   --sequence ACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWY \
@@ -139,11 +140,12 @@ Notes:
 3. `--sequence`
    Takes the raw sequence directly from the CLI.
 4. `--uniprot`
-   If no sequence was provided, the CLI attempts sequence resolution from the UniProt label/accession unless `--no-online-lookup` is set.
+   If no sequence was provided, the CLI first attempts local sequence resolution from the UniProt accession/label and may then fall back to UniProt REST unless `--no-online-lookup` is set.
 
 Notes:
 
 - `--sequence-file` accepts either FASTA or plain text.
+- When `--sequence` or `--sequence-file` is provided, `--uniprot` is used as an identifier/label for logging and output naming.
 - If the FASTA header is present and `--uniprot` is still `UNKNOWN`, the first token of the FASTA header is used as the run label.
 - Raw sequences are normalized before inference: whitespace is removed, residues are uppercased, and terminal `*` characters are stripped.
 
@@ -229,24 +231,11 @@ demo
 
 The demo uses the same committed inference pipeline and produces the same artifact/report outputs as the CLI.
 
-## Local-Only `.local/` Area
-Local evaluation, benchmarking, and one-off comparison scripts belong in `.local/`. That folder is intentionally gitignored.
-
-Suggested layout:
-
-- `.local/eval/`
-- `.local/benchmarks/`
-- `.local/scripts/`
-- `.local/notebooks/`
-
-The committed inference runtime does not depend on `.local/`.
-
-## Shipped Data
+## Benchmark and Reference Data
 - `data/Site4Drug_GroundTruth.json`
-- `data/Site4Drug_GroundTruth_newest_0324.json`
-- `data/TCellEpitope_GroundTruth_random100_seed42.json`
-- `data/TCellEpitope_GroundTruth_random100_seed42_audit.csv`
+  Main curated Site4Drug benchmark table used for evaluation, with target, drug, reference, and site annotations together with benchmark grouping metadata.
 - `data/combined/tcell_regions_with_seq.parquet`
+  T-cell epitope data from IEDB.
 
 ## Repo Layout
 ```text
