@@ -1,6 +1,6 @@
 # Demo for Site4Drug: Predicting Drug-Binding Target Sites with an AI Agent
 
-This repository provides the inference demo and paper artifact for **Site4Drug**, an AI-agent system for predicting drug-binding target sites from protein sequences. Given an amino-acid sequence, Site4Drug recommends a binding modality, proposes ranked targetable regions, annotates each candidate with sequence-derived evidence, and writes an auditable prediction report.
+This repository provides the inference demo and data for **Site4Drug**, an AI-agent system for predicting drug-binding target sites from protein sequences. Given an amino-acid sequence, Site4Drug recommends a binding modality, proposes ranked targetable regions, annotates each candidate with sequence-derived evidence, and writes an auditable prediction report.
 
 You can run Site4Drug on a protein sequence to generate a ranked candidate table, evidence-backed rationale, risk flags, and a hydropathy/PTM/candidate-track visualization, as shown in the preview below.
 
@@ -137,42 +137,16 @@ The Gradio demo uses the same inference pipeline as the CLI and writes the same 
 
 ## Data
 
-The `data/` directory contains the lightweight reference data used by the demo and paper artifact:
+The main data and result artifacts are organized as follows:
 
 ```text
-data/Site4Drug_GroundTruth.json
-```
-
-Curated Site4Drug validation data, including target, drug/modality, reference-site, prediction, and benchmark-group metadata.
-
-```text
-data/tcell_regions_with_seq.parquet
-```
-
-IEDB-derived T-cell epitope data with associated protein sequences.
-
-```text
-data/benchmark/
-```
-
-RCSB co-crystal structures and AlphaFold-predicted structures used for pocket-baseline evaluation. The folder contains only raw structure inputs:
-
-```text
-data/benchmark/rcsb_structures/
-data/benchmark/alphafold_structures/
-```
-
-Final reporting spreadsheets are stored in:
-
-```text
-results/
-```
-
-Appendix handoff artifacts for Module 2 are stored in:
-
-```text
-Appendix: BoltzGen/
-Appendix: DrugCLIP/
+data/Site4Drug_GroundTruth.json        # curated validation metadata and reference sites
+data/tcell_regions_with_seq.parquet    # IEDB-derived T-cell epitope regions with sequences
+data/benchmark/rcsb_structures/        # RCSB co-crystal PDB files for pocket-baseline evaluation
+data/benchmark/alphafold_structures/   # AlphaFold-predicted CIF files aligned to benchmark records
+results/                               # final reporting spreadsheets
+Appendix: BoltzGen/                    # Module 2 peptide-binder handoff artifacts
+Appendix: DrugCLIP/                    # Module 2 pocket-mode handoff artifacts
 ```
 
 Because these appendix paths contain spaces and a colon, quote them in shell commands:
