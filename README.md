@@ -1,6 +1,6 @@
 # Demo for Site4Drug: Predicting Drug-Binding Target Sites with an AI Agent
 
-This repository provides the inference demo and paper artifact for **Site4Drug**, an AI-agent system for predicting drug-binding target sites from protein sequences. Given an amino-acid sequence, Site4Drug recommends a binding modality, proposes ranked targetable regions, annotates each candidate with sequence-derived evidence, and writes an auditable prediction report.
+This repository provides the inference demo and data for **Site4Drug**, an AI-agent system for predicting drug-binding target sites from protein sequences. Given an amino-acid sequence, Site4Drug recommends a binding modality, proposes ranked targetable regions, annotates each candidate with sequence-derived evidence, and writes an auditable prediction report.
 
 You can run Site4Drug on a protein sequence to generate a ranked candidate table, evidence-backed rationale, risk flags, and a hydropathy/PTM/candidate-track visualization, as shown in the preview below.
 
@@ -12,28 +12,49 @@ You can run Site4Drug on a protein sequence to generate a ranked candidate table
 
 ## Setup
 
+Install the package first:
+
 ```bash
 cd <repo-root>
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e .[demo,notebooks]
+```
+
+Then choose one LLM provider.
+
+**Option A: Tinker (default).** Use this if you have a Tinker API key and want the original
+checkpoint-based demo path:
+
+```bash
 ./scripts/setup_tinker_key.sh
 source .tinker.env
 ```
 
-The setup script prompts for `TINKER_API_KEY` and stores it in `.tinker.env`.
+This stores `TINKER_API_KEY` in `.tinker.env`. No OpenRouter setup is required for the default
+Tinker run.
+
+**Option B: OpenRouter.** Use this if you do not have Tinker configured or want to run through
+OpenRouter's OpenAI-compatible chat-completions API:
+
+```bash
+./scripts/setup_openrouter_key.sh
+source .openrouter.env
+```
+
+This stores `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, and
+`OPENROUTER_BASE_URL=https://openrouter.ai/api/v1` in `.openrouter.env`. The setup script
+defaults to the recommended demo model `openai/gpt-4o`.
 
 For CLI-only use, the smaller install is enough:
 
 ```bash
 python -m pip install -e .
-./scripts/setup_tinker_key.sh
-source .tinker.env
 ```
 
 ## Run Inference
 
-Run with a raw sequence:
+Run with a raw sequence (Tinker default):
 
 ```bash
 predict \
@@ -42,6 +63,22 @@ predict \
   --mode auto \
   --top-k 5
 ```
+
+Run the same raw-sequence prediction through OpenRouter:
+
+```bash
+predict \
+  --llm-provider openrouter \
+  --openrouter-model openai/gpt-4o \
+  --uniprot TEST_SEQ \
+  --sequence ACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWY \
+  --mode auto \
+  --top-k 5
+```
+
+We recommend `openai/gpt-4o` for a responsive demo run. Some smaller or open-weight routes can
+time out on the long Site4Drug prompts; if that happens, switch back to the recommended model or
+increase `--openrouter-timeout`.
 
 Run from a FASTA file:
 
@@ -100,42 +137,16 @@ The Gradio demo uses the same inference pipeline as the CLI and writes the same 
 
 ## Data
 
-The `data/` directory contains the lightweight reference data used by the demo and paper artifact:
+The main data and result artifacts are organized as follows:
 
 ```text
-data/Site4Drug_GroundTruth.json
-```
-
-Curated Site4Drug validation data, including target, drug/modality, reference-site, prediction, and benchmark-group metadata.
-
-```text
-data/tcell_regions_with_seq.parquet
-```
-
-IEDB-derived T-cell epitope data with associated protein sequences.
-
-```text
-data/benchmark/
-```
-
-RCSB co-crystal structures and AlphaFold-predicted structures used for pocket-baseline evaluation. The folder contains only raw structure inputs:
-
-```text
-data/benchmark/rcsb_structures/
-data/benchmark/alphafold_structures/
-```
-
-Final reporting spreadsheets are stored in:
-
-```text
-results/
-```
-
-Appendix handoff artifacts for Module 2 are stored in:
-
-```text
-Appendix: BoltzGen/
-Appendix: DrugCLIP/
+data/Site4Drug_GroundTruth.json        # curated validation metadata and reference sites
+data/tcell_regions_with_seq.parquet    # IEDB-derived T-cell epitope regions with sequences
+data/benchmark/rcsb_structures/        # RCSB co-crystal PDB files for pocket-baseline evaluation
+data/benchmark/alphafold_structures/   # AlphaFold-predicted CIF files aligned to benchmark records
+results/                               # final reporting spreadsheets
+Appendix: BoltzGen/                    # Module 2 peptide-binder handoff artifacts
+Appendix: DrugCLIP/                    # Module 2 pocket-mode handoff artifacts
 ```
 
 Because these appendix paths contain spaces and a colon, quote them in shell commands:

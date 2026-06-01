@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from site4drug_inference.common.env_utils import ensure_tinker_api_key
+from site4drug_inference.common.env_utils import ensure_openrouter_api_key, ensure_tinker_api_key
 from site4drug_inference.demo import predict_site
 from site4drug_inference.demo.ui_helpers import (
     agent_conclusion_md,
@@ -43,9 +43,12 @@ def run_demo(
     ptm_source: str,
     ptm_policy: str,
     use_motif: bool,
+    llm_provider: str,
     use_base_model: bool,
     base_model: str,
     checkpoint: str,
+    openrouter_model: str,
+    openrouter_base_url: str,
     max_tokens: int,
     max_input_tokens: int,
     output_dir: str,
@@ -87,8 +90,11 @@ def run_demo(
             state["result"] = predict_site.run_prediction(
                 uniprot=uniprot,
                 raw_sequence=raw_sequence,
+                llm_provider=llm_provider,
                 checkpoint=None if use_base_model else checkpoint,
                 base_model=base_model,
+                openrouter_model=openrouter_model,
+                openrouter_base_url=openrouter_base_url,
                 mode=mode,
                 candidate_source="llm_propose",
                 top_k=int(top_k),
@@ -241,9 +247,26 @@ def build_app() -> gr.Blocks:
                 ptm_policy = gr.Dropdown(["tiered", "hard", "soft"], value="tiered", label="PTM policy")
                 use_motif = gr.Checkbox(value=True, label="Enable motif scan")
             with gr.Row():
+                llm_provider = gr.Dropdown(
+                    ["tinker", "openrouter"],
+                    value=predict_site.DEFAULT_LLM_PROVIDER
+                    if predict_site.DEFAULT_LLM_PROVIDER in {"tinker", "openrouter"}
+                    else "tinker",
+                    label="LLM provider",
+                )
                 use_base_model = gr.Checkbox(value=False, label="Use base model only (no checkpoint)")
                 base_model = gr.Textbox(label="Base model", value=predict_site.BASE_MODEL)
                 checkpoint = gr.Textbox(label="Checkpoint", value=predict_site.DEFAULT_CHECKPOINT)
+            with gr.Row():
+                openrouter_model = gr.Textbox(
+                    label="OpenRouter model",
+                    value=predict_site.DEFAULT_OPENROUTER_MODEL,
+                    placeholder="Recommended: openai/gpt-4o",
+                )
+                openrouter_base_url = gr.Textbox(
+                    label="OpenRouter base URL",
+                    value=predict_site.DEFAULT_OPENROUTER_BASE_URL_EFFECTIVE,
+                )
             with gr.Row():
                 max_tokens = gr.Slider(minimum=256, maximum=12000, value=3000, step=256, label="Max output tokens")
                 max_input_tokens = gr.Slider(minimum=2000, maximum=30000, value=10000, step=500, label="Max input tokens")
@@ -278,9 +301,12 @@ def build_app() -> gr.Blocks:
                 ptm_source,
                 ptm_policy,
                 use_motif,
+                llm_provider,
                 use_base_model,
                 base_model,
                 checkpoint,
+                openrouter_model,
+                openrouter_base_url,
                 max_tokens,
                 max_input_tokens,
                 output_dir,
@@ -314,9 +340,12 @@ def _candidate_ports() -> list[int]:
 
 
 def launch_app() -> None:
-    if not ensure_tinker_api_key(REPO_ROOT):
+    has_tinker = ensure_tinker_api_key(REPO_ROOT)
+    has_openrouter = ensure_openrouter_api_key(REPO_ROOT)
+    if not (has_tinker or has_openrouter):
         raise RuntimeError(
-            "TINKER_API_KEY is not set. Run ./scripts/setup_tinker_key.sh and source .tinker.env."
+            "No LLM API key is set. Run ./scripts/setup_tinker_key.sh or ./scripts/setup_openrouter_key.sh, "
+            "then source the generated env file."
         )
     app = build_app()
     last_error: Exception | None = None

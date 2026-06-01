@@ -16,4 +16,11 @@ if [[ -f ".tinker.env" ]]; then
   set +a
 fi
 
+if [[ -f ".openrouter.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source ".openrouter.env"
+  set +a
+fi
+
 python -m site4drug_inference.demo.gradio_demo "$@"

@@ -69,12 +69,23 @@ def _sample_json(
     max_tokens: int = 1100,
     sampling_seed: int | None = None,
 ) -> tuple[dict | None, dict]:
-    from tinker import types
-
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
+    if hasattr(sampling_client, "sample_messages"):
+        raw_text = sampling_client.sample_messages(
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=0.0,
+            stop=renderer.get_stop_sequences() if hasattr(renderer, "get_stop_sequences") else None,
+            sampling_seed=sampling_seed,
+        )
+        payload, err = parse_json_object(raw_text)
+        return payload, {"raw_text": raw_text, "parse_error": err}
+
+    from tinker import types
+
     prompt = renderer.build_generation_prompt(messages)
     params, _ = build_sampling_params(
         types,
@@ -105,14 +116,25 @@ def _repair_json_once(
     max_tokens: int,
     sampling_seed: int | None = None,
 ) -> tuple[dict | None, dict]:
-    from tinker import types
-
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": original_user_prompt},
         {"role": "assistant", "content": raw_text},
         {"role": "user", "content": repair_prompt},
     ]
+    if hasattr(sampling_client, "sample_messages"):
+        repaired_text = sampling_client.sample_messages(
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=0.0,
+            stop=renderer.get_stop_sequences() if hasattr(renderer, "get_stop_sequences") else None,
+            sampling_seed=sampling_seed,
+        )
+        payload, err = parse_json_object(repaired_text)
+        return payload, {"repair_raw_text": repaired_text, "repair_parse_error": err}
+
+    from tinker import types
+
     prompt = renderer.build_generation_prompt(messages)
     params, _ = build_sampling_params(
         types,

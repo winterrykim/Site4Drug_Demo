@@ -20,7 +20,7 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-from site4drug_inference.common.env_utils import ensure_tinker_api_key
+from site4drug_inference.common.env_utils import ensure_openrouter_api_key, ensure_tinker_api_key
 from site4drug_inference.demo import predict_site as _predict_site
 from site4drug_inference.demo import ui_helpers as _ui_helpers
 from site4drug_inference.demo.ui_helpers import infer_input_mode, ranked_candidates_display_df, resolve_demo_input_sequence
@@ -30,6 +30,9 @@ DEFAULT_BASE_MODEL = BASE_MODEL
 DEFAULT_CHECKPOINT = _predict_site.DEFAULT_CHECKPOINT
 DEFAULT_OUTPUT_DIR = _predict_site.DEFAULT_OUTPUT_DIR
 DEFAULT_MUSITEDEEP_API_BASE_URL = getattr(_predict_site, "DEFAULT_MUSITEDEEP_API_BASE_URL", "https://www.musite.net")
+DEFAULT_LLM_PROVIDER = getattr(_predict_site, "DEFAULT_LLM_PROVIDER", "tinker")
+DEFAULT_OPENROUTER_MODEL = getattr(_predict_site, "DEFAULT_OPENROUTER_MODEL", "")
+DEFAULT_OPENROUTER_BASE_URL = getattr(_predict_site, "DEFAULT_OPENROUTER_BASE_URL_EFFECTIVE", "https://openrouter.ai/api/v1")
 
 
 def _load_predict_site():
@@ -40,13 +43,18 @@ def _load_predict_site():
     return _predict_site
 
 
-def ensure_api_key_or_raise(repo_root: Path) -> None:
-    """Ensure TINKER_API_KEY is present in notebook sessions."""
+def ensure_api_key_or_raise(repo_root: Path, llm_provider: str = "tinker") -> None:
+    """Ensure the selected LLM provider API key is present in notebook sessions."""
+    provider = str(llm_provider or "tinker").strip().lower()
+    if provider == "openrouter":
+        if ensure_openrouter_api_key(repo_root):
+            return
+        raise RuntimeError(
+            "OPENROUTER_API_KEY is not set. Run ./scripts/setup_openrouter_key.sh and source .openrouter.env."
+        )
     if ensure_tinker_api_key(repo_root):
         return
-    raise RuntimeError(
-        "TINKER_API_KEY is not set. Run ./scripts/setup_tinker_key.sh and source .tinker.env."
-    )
+    raise RuntimeError("TINKER_API_KEY is not set. Run ./scripts/setup_tinker_key.sh and source .tinker.env.")
 
 
 def resolve_input_sequence(
@@ -72,9 +80,12 @@ def run_notebook_prediction(
     *,
     uniprot: str,
     raw_sequence: str,
+    llm_provider: str = DEFAULT_LLM_PROVIDER,
     checkpoint: str | None = DEFAULT_CHECKPOINT,
     base_model: str = DEFAULT_BASE_MODEL,
     use_base_model: bool = False,
+    openrouter_model: str = DEFAULT_OPENROUTER_MODEL,
+    openrouter_base_url: str = DEFAULT_OPENROUTER_BASE_URL,
     mode: str = "auto",
     candidate_source: str = "llm_propose",
     top_k: int = 5,
@@ -109,7 +120,10 @@ def run_notebook_prediction(
     kwargs = dict(
         uniprot=uniprot,
         raw_sequence=raw_sequence,
+        llm_provider=llm_provider,
         checkpoint=None if use_base_model else checkpoint,
+        openrouter_model=openrouter_model,
+        openrouter_base_url=openrouter_base_url,
         mode=mode,
         candidate_source=candidate_source,
         top_k=top_k,
