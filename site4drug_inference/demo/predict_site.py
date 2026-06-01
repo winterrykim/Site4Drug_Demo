@@ -67,7 +67,7 @@ DEFAULT_SELF_CONSISTENCY_K = 1
 DEFAULT_MUSITEDEEP_API_BASE_URL = (
     os.environ.get("SITE4DRUG_MUSITEDEEP_API_BASE_URL", MUSITEDEEP_API_BASE_URL_DEFAULT).strip().rstrip("/")
 )
-DEFAULT_IEDB_TABLE_PATH = REPO_ROOT / "data/combined/tcell_regions_with_seq.parquet"
+DEFAULT_IEDB_TABLE_PATH = REPO_ROOT / "data/tcell_regions_with_seq.parquet"
 DEFAULT_IEDB_IOU_THRESHOLD = 0.3
 COMPACT_PROPOSER_MAX_TOKENS = 1400
 SELF_CONSISTENCY_IOU_THRESHOLD = 0.6
@@ -240,7 +240,7 @@ def resolve_sequence_from_uniprot(uniprot: str, allow_online_lookup: bool = True
             seq, _ = read_sequence_file(fasta_path)
             return normalize_sequence(seq), f"local_fasta:{fasta_path}"
 
-    parquet_path = REPO_ROOT / "data/combined/tcell_regions_with_seq.parquet"
+    parquet_path = REPO_ROOT / "data/tcell_regions_with_seq.parquet"
     if parquet_path.exists():
         try:
             import pandas as pd

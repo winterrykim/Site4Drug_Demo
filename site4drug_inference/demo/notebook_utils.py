@@ -99,7 +99,7 @@ def run_notebook_prediction(
     musitedeep_api_base_url: str = DEFAULT_MUSITEDEEP_API_BASE_URL,
     musitedeep_model_map: str | Path | None = None,
     use_iedb_validation: bool = True,
-    iedb_table_path: str | Path = REPO_ROOT / "data/combined/tcell_regions_with_seq.parquet",
+    iedb_table_path: str | Path = REPO_ROOT / "data/tcell_regions_with_seq.parquet",
     iedb_iou_threshold: float = 0.3,
     show_progress: bool = True,
     progress_sink: Any | None = None,
