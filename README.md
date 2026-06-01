@@ -2,7 +2,7 @@
 
 This repository provides the inference demo and paper artifact for **Site4Drug**, an AI-agent system for predicting drug-binding target sites from protein sequences. Given an amino-acid sequence, Site4Drug recommends a binding modality, proposes ranked targetable regions, annotates each candidate with sequence-derived evidence, and writes an auditable prediction report.
 
-The demo is meant to show what a user gets from a Site4Drug run: a ranked candidate table, evidence-backed rationale, risk flags, and a hydropathy/PTM/candidate-track visualization that makes the site-selection decision easier to inspect.
+You can run Site4Drug on a protein sequence to generate a ranked candidate table, evidence-backed rationale, risk flags, and a hydropathy/PTM/candidate-track visualization, as shown in the preview below.
 
 ## Preview
 
@@ -114,6 +114,17 @@ data/tcell_regions_with_seq.parquet
 
 IEDB-derived T-cell epitope data with associated protein sequences.
 
+```text
+data/benchmark/
+```
+
+RCSB co-crystal structures and AlphaFold-predicted structures used for pocket-baseline evaluation. The folder contains only raw structure inputs:
+
+```text
+data/benchmark/rcsb_structures/
+data/benchmark/alphafold_structures/
+```
+
 Final reporting spreadsheets are stored in:
 
 ```text
@@ -155,6 +166,7 @@ site4drug_inference/
   common/       # sequence features, PTM/motif integration, schemas, sampling helpers
   demo/         # prediction CLI, report rendering, plotting, panel logic, Gradio demo
 data/           # curated validation data and IEDB-derived sequence table
+  benchmark/    # raw RCSB and AlphaFold structures for pocket-baseline evaluation
 docs/assets/    # README preview images
 results/        # final reporting spreadsheets
 notebooks/      # reproducibility notebooks
