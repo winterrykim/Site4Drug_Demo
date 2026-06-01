@@ -1,6 +1,6 @@
-# Site4Drug Inference
+# Site4Drug Inference Artifact
 
-Inference-only distribution repo for Site4Drug. This repository keeps the successful default inference path, compact reports, reproducibility notebooks, and an optional Gradio demo, while leaving training and local-only benchmarking/evaluation scripts out of the committed tree.
+Inference-only distribution repo for Site4Drug. This repository keeps the successful default inference path, compact reports, reproducibility notebooks, optional Gradio demo, and camera-ready appendix artifacts, while leaving training and local-only benchmarking/evaluation scripts out of the committed tree.
 
 ## What This Repo Includes
 - Packaged inference runtime under `site4drug_inference/`
@@ -10,13 +10,15 @@ Inference-only distribution repo for Site4Drug. This repository keeps the succes
 - Optional `demo` CLI for the Gradio app
 - Reproducibility notebooks under `notebooks/demo/`
 - Minimal reference data bundle under `data/`
+- Final reporting spreadsheets under `results/`
+- Appendix handoff artifacts under `Appendix: BoltzGen/` and `Appendix: DrugCLIP/`
 
 ## What This Repo Does Not Include
 - Training code
 - Training-data prep
 - Committed evaluation or benchmarking scripts
-- Output artifacts
-- Bulky benchmark assets
+- Raw hosted-model run directories under `outputs/`
+- Bulky local benchmark caches or generated structures
 
 ## Setup
 Full setup for CLI, demo, and notebooks:
@@ -46,6 +48,7 @@ Important:
 - CLI inference requires `TINKER_API_KEY`.
 - Notebook inference requires `TINKER_API_KEY`.
 - `--use-base-model` only skips the fine-tuned checkpoint. It still uses Tinker for base-model inference.
+- The default `musitedeep` PTM source is strict and records raw API artifacts. Use `--ptm-source hybrid` for a MusiteDeep-backed run that falls back to local rule-based PTM calls when the remote backend is unavailable.
 
 Optional environment variables:
 
@@ -59,6 +62,12 @@ CLI help:
 
 ```bash
 predict --help
+```
+
+Without installing the editable console script first, the module entrypoint is also available:
+
+```bash
+python -m site4drug_inference.demo.predict_site --help
 ```
 
 Run with a raw sequence:
@@ -236,6 +245,27 @@ The demo uses the same committed inference pipeline and produces the same artifa
   Main curated Site4Drug benchmark table used for evaluation, with target, drug, reference, and site annotations together with benchmark grouping metadata.
 - `data/combined/tcell_regions_with_seq.parquet`
   T-cell epitope data from IEDB.
+- `results/*.xlsx`
+  Final reporting spreadsheets for pocket, antibody, and DrugCLIP outputs used by the camera-ready artifact.
+- `Appendix: BoltzGen/`
+  Minimal BoltzGen handoff code plus selected EGFR peptide-binder result archives and figures.
+- `Appendix: DrugCLIP/`
+  DrugCLIP wrapper/notebook material plus ranked-compound text outputs for representative pocket-mode targets.
+
+Because the appendix directories contain spaces and a colon, quote their paths in shell commands, for example:
+
+```bash
+ls "Appendix: DrugCLIP/results"
+```
+
+## Verification
+Run the lightweight regression suite:
+
+```bash
+python -m pytest -q
+```
+
+The tests cover schema/report rendering, self-consistency aggregation, PTM-mask enrichment for LLM proposals, and the module CLI entrypoint.
 
 ## Repo Layout
 ```text
@@ -243,6 +273,9 @@ site4drug_inference/
   common/   # feature extraction, PTM/motif integration, schemas, sampling helpers
   demo/     # predict CLI, report rendering, plotting, panel/orchestrator logic, Gradio demo
 data/       # shipped reference data
+results/    # final reporting spreadsheets
 notebooks/  # reproducibility notebooks
 tests/      # regression and smoke-style tests for the committed inference path
+"Appendix: BoltzGen"/  # Module 2 peptide-binder handoff artifacts
+"Appendix: DrugCLIP"/  # Module 2 small-molecule handoff artifacts
 ```

@@ -78,6 +78,34 @@ class SelfConsistencyAndFillTests(unittest.TestCase):
         self.assertEqual(stats["llm_proposal_fill_count"], 0)
         self.assertEqual(stats["llm_proposal_valid"], 1)
 
+    def test_llm_enrichment_counts_typed_ptm_mask_overlap(self):
+        seq_summary = {
+            "tm_regions": [],
+            "ptm_sites": [
+                {
+                    "ptm_type": "N-linked_glycosylation",
+                    "position": 10,
+                    "mask_start": 7,
+                    "mask_end": 13,
+                    "rule_confidence": "high",
+                }
+            ],
+            "motif_hits": [],
+            "cysteine_positions": [],
+        }
+        enriched = predict_site._enrich_span_candidate(
+            sequence="ACDEFGHIKLMNPQRSTVWY",
+            start=4,
+            end=8,
+            mode="epitope",
+            seq_summary=seq_summary,
+            ptm_policy="tiered",
+        )
+        self.assertTrue(enriched["overlaps_ptm_mask"])
+        self.assertEqual(enriched["ptm_overlap_by_type"], {"N-linked_glycosylation": 1})
+        self.assertIn("PTM-overlap", enriched["risk_flags"])
+        self.assertIn("glyco-mask-overlap", enriched["risk_flags"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1203,13 +1203,18 @@ def _inject_ranked_candidate_details(parsed: dict, candidate_lookup: dict[str, d
 
 
 def _ptm_overlap_by_type_from_summary(start: int, end: int, ptm_sites: list[dict]) -> dict[str, int]:
+    """Count PTM typed mask overlaps for an inclusive candidate span."""
     out: dict[str, int] = {}
     for site in ptm_sites:
-        try:
+        mask_start = int(_safe_float(site.get("mask_start"), -1))
+        mask_end = int(_safe_float(site.get("mask_end"), -1))
+        if mask_start <= 0 or mask_end < mask_start:
             pos = int(_safe_float(site.get("position"), -1))
-        except Exception:
+            mask_start = pos
+            mask_end = pos
+        if mask_start <= 0 or mask_end < mask_start:
             continue
-        if pos < start or pos > end:
+        if end < mask_start or start > mask_end:
             continue
         ptm_type = str(site.get("ptm_type") or "unknown")
         out[ptm_type] = out.get(ptm_type, 0) + 1
@@ -3695,3 +3700,6 @@ def main() -> None:
     print(f"Markdown report:      {result['md_path']}")
     print(f"HTML report:          {result['html_path']}")
 
+
+if __name__ == "__main__":
+    main()
