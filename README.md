@@ -42,8 +42,9 @@ OpenRouter's OpenAI-compatible chat-completions API:
 source .openrouter.env
 ```
 
-This stores `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL`, and
-`OPENROUTER_BASE_URL=https://openrouter.ai/api/v1` in `.openrouter.env`.
+This stores `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, and
+`OPENROUTER_BASE_URL=https://openrouter.ai/api/v1` in `.openrouter.env`. The setup script
+defaults to the recommended demo model `openai/gpt-4o`.
 
 For CLI-only use, the smaller install is enough:
 
@@ -68,14 +69,16 @@ Run the same raw-sequence prediction through OpenRouter:
 ```bash
 predict \
   --llm-provider openrouter \
+  --openrouter-model openai/gpt-4o \
   --uniprot TEST_SEQ \
   --sequence ACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWY \
   --mode auto \
   --top-k 5
 ```
 
-If `--openrouter-model` is omitted, OpenRouter uses the account default model. You can set a
-specific model with `--openrouter-model <model-id>` or `OPENROUTER_MODEL`.
+We recommend `openai/gpt-4o` for a responsive demo run. Some smaller or open-weight routes can
+time out on the long Site4Drug prompts; if that happens, switch back to the recommended model or
+increase `--openrouter-timeout`.
 
 Run from a FASTA file:
 

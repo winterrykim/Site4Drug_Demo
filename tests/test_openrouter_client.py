@@ -1,7 +1,13 @@
 import json
 from unittest.mock import patch
 
-from site4drug_inference.common.openrouter_client import ApproxChatRenderer, OpenRouterChatClient
+import pytest
+
+from site4drug_inference.common.openrouter_client import (
+    DEFAULT_OPENROUTER_MODEL,
+    ApproxChatRenderer,
+    OpenRouterChatClient,
+)
 
 
 class _FakeResponse:
@@ -66,3 +72,12 @@ def test_approx_chat_renderer_exposes_budget_length():
     )
     assert prompt.length > 0
     assert "system: You are Site4Drug." in prompt.text
+
+
+def test_openrouter_client_requires_model():
+    with pytest.raises(ValueError, match="OPENROUTER_MODEL"):
+        OpenRouterChatClient(api_key="or-test", model="")
+
+
+def test_recommended_openrouter_model_is_explicit():
+    assert DEFAULT_OPENROUTER_MODEL == "openai/gpt-4o"

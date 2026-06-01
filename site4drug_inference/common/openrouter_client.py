@@ -12,6 +12,7 @@ from typing import Any, Sequence
 
 DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_OPENROUTER_APP_TITLE = "Site4Drug Demo"
+DEFAULT_OPENROUTER_MODEL = "openai/gpt-4o"
 
 
 @dataclass(frozen=True)
@@ -57,8 +58,11 @@ class OpenRouterChatClient:
         api_key = str(api_key or "").strip()
         if not api_key:
             raise ValueError("OPENROUTER_API_KEY is required for OpenRouter inference.")
+        model = str(model or "").strip()
+        if not model:
+            raise ValueError("OPENROUTER_MODEL or --openrouter-model is required for OpenRouter inference.")
         self.api_key = api_key
-        self.model = str(model or "").strip()
+        self.model = model
         self.base_url = str(base_url or DEFAULT_OPENROUTER_BASE_URL).strip().rstrip("/")
         self.referer = str(referer or "").strip()
         self.title = str(title or "").strip()
@@ -90,8 +94,7 @@ class OpenRouterChatClient:
             "max_tokens": int(max_tokens),
             "temperature": float(temperature),
         }
-        if self.model:
-            payload["model"] = self.model
+        payload["model"] = self.model
         if stop:
             payload["stop"] = list(stop)
         if sampling_seed is not None:

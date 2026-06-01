@@ -261,7 +261,7 @@ def build_app() -> gr.Blocks:
                 openrouter_model = gr.Textbox(
                     label="OpenRouter model",
                     value=predict_site.DEFAULT_OPENROUTER_MODEL,
-                    placeholder="Optional; blank uses OpenRouter account default",
+                    placeholder="Recommended: openai/gpt-4o",
                 )
                 openrouter_base_url = gr.Textbox(
                     label="OpenRouter base URL",

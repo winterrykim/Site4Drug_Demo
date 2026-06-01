@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ENV_FILE="${1:-.openrouter.env}"
+DEFAULT_OPENROUTER_MODEL="openai/gpt-4o"
 
 printf "OpenRouter API key (input hidden): "
 stty -echo
@@ -14,8 +15,9 @@ if [[ -z "${OPENROUTER_API_KEY}" ]]; then
   exit 1
 fi
 
-printf "OpenRouter model id (optional; Enter to use account default): "
+printf "OpenRouter model id [%s]: " "${DEFAULT_OPENROUTER_MODEL}"
 read -r OPENROUTER_MODEL
+OPENROUTER_MODEL="${OPENROUTER_MODEL:-${DEFAULT_OPENROUTER_MODEL}}"
 
 cat > "${ENV_FILE}" <<EOF
 export OPENROUTER_API_KEY='${OPENROUTER_API_KEY}'

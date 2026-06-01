@@ -39,6 +39,7 @@ from site4drug_inference.common.musitedeep_api import DEFAULT_MUSITEDEEP_API_BAS
 from site4drug_inference.common.openrouter_client import (
     DEFAULT_OPENROUTER_APP_TITLE,
     DEFAULT_OPENROUTER_BASE_URL,
+    DEFAULT_OPENROUTER_MODEL as OPENROUTER_MODEL_FALLBACK,
     ApproxChatRenderer,
     OpenRouterChatClient,
 )
@@ -72,7 +73,7 @@ DEFAULT_REPORT_VIEW = "compact"
 DEFAULT_SELF_CONSISTENCY_K = 1
 DEFAULT_LLM_PROVIDER = os.environ.get("SITE4DRUG_LLM_PROVIDER", "tinker").strip().lower()
 DEFAULT_OPENROUTER_MODEL = (
-    os.environ.get("SITE4DRUG_OPENROUTER_MODEL") or os.environ.get("OPENROUTER_MODEL", "")
+    os.environ.get("SITE4DRUG_OPENROUTER_MODEL") or os.environ.get("OPENROUTER_MODEL", OPENROUTER_MODEL_FALLBACK)
 ).strip()
 DEFAULT_OPENROUTER_BASE_URL_EFFECTIVE = (
     os.environ.get("SITE4DRUG_OPENROUTER_BASE_URL")
@@ -125,7 +126,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--openrouter-model",
         default=DEFAULT_OPENROUTER_MODEL,
-        help="OpenRouter model id. If omitted, OpenRouter uses the account default.",
+        help=f"OpenRouter model id (recommended default: {OPENROUTER_MODEL_FALLBACK}).",
     )
     parser.add_argument(
         "--openrouter-base-url",
@@ -2334,6 +2335,7 @@ def run_prediction(
         str(openrouter_model or "").strip()
         or os.environ.get("SITE4DRUG_OPENROUTER_MODEL", "").strip()
         or os.environ.get("OPENROUTER_MODEL", "").strip()
+        or OPENROUTER_MODEL_FALLBACK
     )
     selected_openrouter_base_url = (
         str(openrouter_base_url or "").strip()
