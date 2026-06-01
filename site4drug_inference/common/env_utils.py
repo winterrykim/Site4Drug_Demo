@@ -49,3 +49,26 @@ def ensure_tinker_api_key(repo_root: Path, env_filename: str = ".tinker.env") ->
 
     os.environ["TINKER_API_KEY"] = api_key
     return True
+
+
+def ensure_openrouter_api_key(repo_root: Path, env_filename: str = ".openrouter.env") -> bool:
+    """Ensure OPENROUTER_API_KEY is present, auto-loading from a local env file if needed."""
+    if os.environ.get("OPENROUTER_API_KEY"):
+        return True
+
+    env_path = repo_root / env_filename
+    env_values = load_env_file(env_path)
+    api_key = env_values.get("OPENROUTER_API_KEY")
+    if not api_key:
+        return False
+
+    os.environ["OPENROUTER_API_KEY"] = api_key
+    for optional_key in (
+        "OPENROUTER_MODEL",
+        "OPENROUTER_BASE_URL",
+        "OPENROUTER_HTTP_REFERER",
+        "OPENROUTER_TITLE",
+    ):
+        if optional_key in env_values and not os.environ.get(optional_key):
+            os.environ[optional_key] = env_values[optional_key]
+    return True

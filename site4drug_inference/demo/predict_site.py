@@ -33,9 +33,15 @@ from site4drug_inference.common.constraint_features import (
     region_overlaps,
     slice_sequence_with_overlap,
 )
-from site4drug_inference.common.env_utils import ensure_tinker_api_key
+from site4drug_inference.common.env_utils import ensure_openrouter_api_key, ensure_tinker_api_key
 from site4drug_inference.common.model_defaults import BASE_MODEL, DEFAULT_CHECKPOINT
 from site4drug_inference.common.musitedeep_api import DEFAULT_MUSITEDEEP_API_BASE_URL as MUSITEDEEP_API_BASE_URL_DEFAULT
+from site4drug_inference.common.openrouter_client import (
+    DEFAULT_OPENROUTER_APP_TITLE,
+    DEFAULT_OPENROUTER_BASE_URL,
+    ApproxChatRenderer,
+    OpenRouterChatClient,
+)
 from site4drug_inference.common.ptm_backends import PTMBackendError
 from site4drug_inference.common.site_output_schema import validate_site_output, with_schema_defaults
 from site4drug_inference.common.tinker_sampling import build_sampling_params, sampling_seed_supported
@@ -64,6 +70,21 @@ DEFAULT_MOTIF_SOURCE = "remote"
 DEFAULT_FAILURE_POLICY = "raw_llm_only"
 DEFAULT_REPORT_VIEW = "compact"
 DEFAULT_SELF_CONSISTENCY_K = 1
+DEFAULT_LLM_PROVIDER = os.environ.get("SITE4DRUG_LLM_PROVIDER", "tinker").strip().lower()
+DEFAULT_OPENROUTER_MODEL = (
+    os.environ.get("SITE4DRUG_OPENROUTER_MODEL") or os.environ.get("OPENROUTER_MODEL", "")
+).strip()
+DEFAULT_OPENROUTER_BASE_URL_EFFECTIVE = (
+    os.environ.get("SITE4DRUG_OPENROUTER_BASE_URL")
+    or os.environ.get("OPENROUTER_BASE_URL", DEFAULT_OPENROUTER_BASE_URL)
+).strip()
+DEFAULT_OPENROUTER_REFERER = (
+    os.environ.get("SITE4DRUG_OPENROUTER_REFERER") or os.environ.get("OPENROUTER_HTTP_REFERER", "")
+).strip()
+DEFAULT_OPENROUTER_TITLE = (
+    os.environ.get("SITE4DRUG_OPENROUTER_TITLE")
+    or os.environ.get("OPENROUTER_TITLE", DEFAULT_OPENROUTER_APP_TITLE)
+).strip()
 DEFAULT_MUSITEDEEP_API_BASE_URL = (
     os.environ.get("SITE4DRUG_MUSITEDEEP_API_BASE_URL", MUSITEDEEP_API_BASE_URL_DEFAULT).strip().rstrip("/")
 )
@@ -84,6 +105,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sequence", default=None, help="Raw antigen sequence")
     parser.add_argument("--sequence-file", type=Path, default=None, help="FASTA/plain-text file path")
     parser.add_argument("--interactive", action="store_true", help="Prompt for sequence interactively")
+    parser.add_argument(
+        "--llm-provider",
+        choices=["tinker", "openrouter"],
+        default=DEFAULT_LLM_PROVIDER if DEFAULT_LLM_PROVIDER in {"tinker", "openrouter"} else "tinker",
+        help="LLM backend for proposal, repair, and panel calls.",
+    )
     parser.add_argument("--checkpoint", default=DEFAULT_CHECKPOINT, help="Tinker checkpoint path")
     parser.add_argument(
         "--base-model",
@@ -94,6 +121,32 @@ def parse_args() -> argparse.Namespace:
         "--use-base-model",
         action="store_true",
         help="Use base model inference directly (ignore --checkpoint).",
+    )
+    parser.add_argument(
+        "--openrouter-model",
+        default=DEFAULT_OPENROUTER_MODEL,
+        help="OpenRouter model id. If omitted, OpenRouter uses the account default.",
+    )
+    parser.add_argument(
+        "--openrouter-base-url",
+        default=DEFAULT_OPENROUTER_BASE_URL_EFFECTIVE,
+        help="OpenRouter API base URL.",
+    )
+    parser.add_argument(
+        "--openrouter-referer",
+        default=DEFAULT_OPENROUTER_REFERER,
+        help="Optional OpenRouter HTTP-Referer attribution header.",
+    )
+    parser.add_argument(
+        "--openrouter-title",
+        default=DEFAULT_OPENROUTER_TITLE,
+        help="Optional OpenRouter application title attribution header.",
+    )
+    parser.add_argument(
+        "--openrouter-timeout",
+        type=float,
+        default=120.0,
+        help="OpenRouter HTTP request timeout in seconds.",
     )
     parser.add_argument("--mode", choices=["auto", "epitope", "pocket"], default=DEFAULT_MODE)
     parser.add_argument(
@@ -983,6 +1036,16 @@ def _sample_text(
     temperature: float,
     sampling_seed: int | None = None,
 ) -> str:
+    if hasattr(sampling_client, "sample_messages"):
+        stop = renderer.get_stop_sequences() if hasattr(renderer, "get_stop_sequences") else None
+        return sampling_client.sample_messages(
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            stop=stop,
+            sampling_seed=sampling_seed,
+        )
+
     from tinker import types
 
     params, _ = build_sampling_params(
@@ -2120,8 +2183,14 @@ def _render_html_report(run: dict, *, report_view: str = DEFAULT_REPORT_VIEW) ->
 def run_prediction(
     uniprot: str,
     raw_sequence: str,
+    llm_provider: str = DEFAULT_LLM_PROVIDER,
     checkpoint: str | None = DEFAULT_CHECKPOINT,
     base_model: str = BASE_MODEL,
+    openrouter_model: str = DEFAULT_OPENROUTER_MODEL,
+    openrouter_base_url: str = DEFAULT_OPENROUTER_BASE_URL_EFFECTIVE,
+    openrouter_referer: str = DEFAULT_OPENROUTER_REFERER,
+    openrouter_title: str = DEFAULT_OPENROUTER_TITLE,
+    openrouter_timeout: float = 120.0,
     mode: str = DEFAULT_MODE,
     candidate_source: str = DEFAULT_CANDIDATE_SOURCE,
     top_k: int = DEFAULT_TOP_K,
@@ -2241,11 +2310,19 @@ def run_prediction(
         step_callback=_emit_progress,
     )
 
-    if require_api_key and not ensure_tinker_api_key(REPO_ROOT):
-        raise RuntimeError("TINKER_API_KEY is not set. Run ./scripts/setup_tinker_key.sh and source .tinker.env")
+    selected_llm_provider = str(llm_provider or DEFAULT_LLM_PROVIDER or "tinker").strip().lower()
+    if selected_llm_provider not in {"tinker", "openrouter"}:
+        raise ValueError("llm_provider must be one of: tinker, openrouter")
 
-    import tinker
-    from tinker_cookbook import renderers, tokenizer_utils
+    if require_api_key:
+        if selected_llm_provider == "openrouter":
+            if not ensure_openrouter_api_key(REPO_ROOT):
+                raise RuntimeError(
+                    "OPENROUTER_API_KEY is not set. Run ./scripts/setup_openrouter_key.sh "
+                    "and source .openrouter.env, or export OPENROUTER_API_KEY."
+                )
+        elif not ensure_tinker_api_key(REPO_ROOT):
+            raise RuntimeError("TINKER_API_KEY is not set. Run ./scripts/setup_tinker_key.sh and source .tinker.env")
 
     run_id = f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{_sanitize_label(uniprot)}"
     run_dir = output_base / run_id
@@ -2253,69 +2330,130 @@ def run_prediction(
 
     selected_base_model = str(base_model).strip() or BASE_MODEL
     selected_checkpoint = str(checkpoint).strip() if checkpoint is not None else ""
+    selected_openrouter_model = (
+        str(openrouter_model or "").strip()
+        or os.environ.get("SITE4DRUG_OPENROUTER_MODEL", "").strip()
+        or os.environ.get("OPENROUTER_MODEL", "").strip()
+    )
+    selected_openrouter_base_url = (
+        str(openrouter_base_url or "").strip()
+        or os.environ.get("SITE4DRUG_OPENROUTER_BASE_URL", "").strip()
+        or os.environ.get("OPENROUTER_BASE_URL", "").strip()
+        or DEFAULT_OPENROUTER_BASE_URL
+    )
+    selected_openrouter_referer = (
+        str(openrouter_referer or "").strip()
+        or os.environ.get("SITE4DRUG_OPENROUTER_REFERER", "").strip()
+        or os.environ.get("OPENROUTER_HTTP_REFERER", "").strip()
+    )
+    selected_openrouter_title = (
+        str(openrouter_title or "").strip()
+        or os.environ.get("SITE4DRUG_OPENROUTER_TITLE", "").strip()
+        or os.environ.get("OPENROUTER_TITLE", "").strip()
+        or DEFAULT_OPENROUTER_APP_TITLE
+    )
 
-    tokenizer = tokenizer_utils.get_tokenizer(selected_base_model)
-    renderer = renderers.get_renderer("qwen3", tokenizer)
-    sampling_seed_is_supported = sampling_seed_supported(tinker.types)
-    if sampling_seed is not None and not sampling_seed_is_supported:
-        runtime_option_warnings.append("sampling_seed_requested_but_unsupported")
-    service_client = tinker.ServiceClient()
-    if selected_checkpoint:
-        sampling_client = service_client.create_sampling_client(model_path=selected_checkpoint)
-        model_source = "checkpoint"
+    if selected_llm_provider == "tinker":
+        import tinker
+        from tinker_cookbook import renderers, tokenizer_utils
+
+        tokenizer = tokenizer_utils.get_tokenizer(selected_base_model)
+        renderer = renderers.get_renderer("qwen3", tokenizer)
+        sampling_seed_is_supported = sampling_seed_supported(tinker.types)
+        if sampling_seed is not None and not sampling_seed_is_supported:
+            runtime_option_warnings.append("sampling_seed_requested_but_unsupported")
+        service_client = tinker.ServiceClient()
+        if selected_checkpoint:
+            sampling_client = service_client.create_sampling_client(model_path=selected_checkpoint)
+            model_source = "checkpoint"
+        else:
+            sampling_client = service_client.create_sampling_client(base_model=selected_base_model)
+            model_source = "base_model"
+
+        repair_sampling_client = sampling_client
+        repair_model_source = model_source
+        repair_client_error: str | None = None
+        if repair_with_base_model and selected_checkpoint:
+            try:
+                repair_sampling_client = service_client.create_sampling_client(base_model=selected_base_model)
+                repair_model_source = "base_model"
+                orchestrator.record(
+                    plan="Configure repair-model routing.",
+                    execution="create_sampling_client(base_model=selected_base_model)",
+                    observation=f"repair_model_source={repair_model_source}",
+                    status="ok",
+                )
+            except Exception as exc:
+                repair_sampling_client = sampling_client
+                repair_model_source = model_source
+                repair_client_error = str(exc)
+                orchestrator.record(
+                    plan="Configure repair-model routing.",
+                    execution="create_sampling_client(base_model=selected_base_model)",
+                    observation="repair model setup failed; using primary model for repair",
+                    status="warn",
+                    error_code="repair_model_setup_failed",
+                )
+
+        panel_sampling_client = sampling_client
+        panel_model_source = model_source
+        panel_client_error: str | None = None
+        if panel_with_base_model and selected_checkpoint:
+            try:
+                panel_sampling_client = service_client.create_sampling_client(base_model=selected_base_model)
+                panel_model_source = "base_model"
+                orchestrator.record(
+                    plan="Configure panel-model routing.",
+                    execution="create_sampling_client(base_model=selected_base_model)",
+                    observation=f"panel_model_source={panel_model_source}",
+                    status="ok",
+                )
+            except Exception as exc:
+                panel_sampling_client = sampling_client
+                panel_model_source = model_source
+                panel_client_error = str(exc)
+                orchestrator.record(
+                    plan="Configure panel-model routing.",
+                    execution="create_sampling_client(base_model=selected_base_model)",
+                    observation="panel model setup failed; using primary model for panel",
+                    status="warn",
+                    error_code="panel_model_setup_failed",
+                )
     else:
-        sampling_client = service_client.create_sampling_client(base_model=selected_base_model)
-        model_source = "base_model"
-
-    repair_sampling_client = sampling_client
-    repair_model_source = model_source
-    repair_client_error: str | None = None
-    if repair_with_base_model and selected_checkpoint:
-        try:
-            repair_sampling_client = service_client.create_sampling_client(base_model=selected_base_model)
-            repair_model_source = "base_model"
-            orchestrator.record(
-                plan="Configure repair-model routing.",
-                execution="create_sampling_client(base_model=selected_base_model)",
-                observation=f"repair_model_source={repair_model_source}",
-                status="ok",
-            )
-        except Exception as exc:
-            repair_sampling_client = sampling_client
-            repair_model_source = model_source
-            repair_client_error = str(exc)
-            orchestrator.record(
-                plan="Configure repair-model routing.",
-                execution="create_sampling_client(base_model=selected_base_model)",
-                observation="repair model setup failed; using primary model for repair",
-                status="warn",
-                error_code="repair_model_setup_failed",
-            )
-
-    panel_sampling_client = sampling_client
-    panel_model_source = model_source
-    panel_client_error: str | None = None
-    if panel_with_base_model and selected_checkpoint:
-        try:
-            panel_sampling_client = service_client.create_sampling_client(base_model=selected_base_model)
-            panel_model_source = "base_model"
-            orchestrator.record(
-                plan="Configure panel-model routing.",
-                execution="create_sampling_client(base_model=selected_base_model)",
-                observation=f"panel_model_source={panel_model_source}",
-                status="ok",
-            )
-        except Exception as exc:
-            panel_sampling_client = sampling_client
-            panel_model_source = model_source
-            panel_client_error = str(exc)
-            orchestrator.record(
-                plan="Configure panel-model routing.",
-                execution="create_sampling_client(base_model=selected_base_model)",
-                observation="panel model setup failed; using primary model for panel",
-                status="warn",
-                error_code="panel_model_setup_failed",
-            )
+        tokenizer = None
+        renderer = ApproxChatRenderer()
+        sampling_seed_is_supported = True
+        if selected_checkpoint:
+            runtime_option_warnings.append("checkpoint_ignored_for_openrouter_provider")
+        if repair_with_base_model:
+            runtime_option_warnings.append("repair_with_base_model_uses_openrouter_primary_client")
+        if panel_with_base_model:
+            runtime_option_warnings.append("panel_with_base_model_uses_openrouter_primary_client")
+        sampling_client = OpenRouterChatClient(
+            api_key=os.environ.get("OPENROUTER_API_KEY", ""),
+            model=selected_openrouter_model,
+            base_url=selected_openrouter_base_url,
+            referer=selected_openrouter_referer,
+            title=selected_openrouter_title,
+            timeout=float(openrouter_timeout),
+        )
+        model_source = "openrouter"
+        selected_checkpoint = ""
+        repair_sampling_client = sampling_client
+        repair_model_source = "openrouter"
+        repair_client_error = None
+        panel_sampling_client = sampling_client
+        panel_model_source = "openrouter"
+        panel_client_error = None
+        orchestrator.record(
+            plan="Configure OpenRouter inference routing.",
+            execution="OpenRouterChatClient(chat/completions)",
+            observation=(
+                f"openrouter_model={selected_openrouter_model or 'account_default'}, "
+                f"base_url={selected_openrouter_base_url}"
+            ),
+            status="ok",
+        )
 
     # Build candidate pools from shared feature engine.
     feature_backend_error: str | None = None
@@ -3474,11 +3612,17 @@ def run_prediction(
             "mode_request": mode,
         },
         "model": {
+            "provider": selected_llm_provider,
             "base_model": selected_base_model,
             "checkpoint": selected_checkpoint if selected_checkpoint else None,
+            "openrouter_model": selected_openrouter_model if selected_llm_provider == "openrouter" else None,
+            "openrouter_base_url": selected_openrouter_base_url if selected_llm_provider == "openrouter" else None,
+            "openrouter_referer": selected_openrouter_referer if selected_llm_provider == "openrouter" else None,
+            "openrouter_title": selected_openrouter_title if selected_llm_provider == "openrouter" else None,
             "source": model_source,
         },
         "generation": {
+            "llm_provider": selected_llm_provider,
             "requested_top_k": top_k,
             "candidate_source": candidate_source,
             "failure_policy": failure_policy,
@@ -3637,8 +3781,14 @@ def main() -> None:
     result = run_prediction(
         uniprot=uniprot,
         raw_sequence=raw_sequence,
+        llm_provider=args.llm_provider,
         checkpoint=None if args.use_base_model else args.checkpoint,
         base_model=args.base_model,
+        openrouter_model=args.openrouter_model,
+        openrouter_base_url=args.openrouter_base_url,
+        openrouter_referer=args.openrouter_referer,
+        openrouter_title=args.openrouter_title,
+        openrouter_timeout=args.openrouter_timeout,
         mode=args.mode,
         candidate_source=args.candidate_source,
         top_k=args.top_k,
@@ -3675,6 +3825,7 @@ def main() -> None:
     print(f"Seq length:           {run_payload['input']['sequence_length']} aa")
     print(f"Requested mode:       {run_payload['input']['mode_request']}")
     print(f"Run status:           {run_payload.get('run_status', 'unknown')}")
+    print(f"LLM provider:         {run_payload['model'].get('provider', 'tinker')}")
     print(f"Candidate source:     {run_payload['generation'].get('candidate_source')}")
     print(
         f"Recommended modality: {run_payload['recommended_modality']} "

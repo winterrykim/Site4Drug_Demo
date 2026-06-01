@@ -12,28 +12,48 @@ You can run Site4Drug on a protein sequence to generate a ranked candidate table
 
 ## Setup
 
+Install the package first:
+
 ```bash
 cd <repo-root>
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e .[demo,notebooks]
+```
+
+Then choose one LLM provider.
+
+**Option A: Tinker (default).** Use this if you have a Tinker API key and want the original
+checkpoint-based demo path:
+
+```bash
 ./scripts/setup_tinker_key.sh
 source .tinker.env
 ```
 
-The setup script prompts for `TINKER_API_KEY` and stores it in `.tinker.env`.
+This stores `TINKER_API_KEY` in `.tinker.env`. No OpenRouter setup is required for the default
+Tinker run.
+
+**Option B: OpenRouter.** Use this if you do not have Tinker configured or want to run through
+OpenRouter's OpenAI-compatible chat-completions API:
+
+```bash
+./scripts/setup_openrouter_key.sh
+source .openrouter.env
+```
+
+This stores `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL`, and
+`OPENROUTER_BASE_URL=https://openrouter.ai/api/v1` in `.openrouter.env`.
 
 For CLI-only use, the smaller install is enough:
 
 ```bash
 python -m pip install -e .
-./scripts/setup_tinker_key.sh
-source .tinker.env
 ```
 
 ## Run Inference
 
-Run with a raw sequence:
+Run with a raw sequence (Tinker default):
 
 ```bash
 predict \
@@ -42,6 +62,20 @@ predict \
   --mode auto \
   --top-k 5
 ```
+
+Run the same raw-sequence prediction through OpenRouter:
+
+```bash
+predict \
+  --llm-provider openrouter \
+  --uniprot TEST_SEQ \
+  --sequence ACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWY \
+  --mode auto \
+  --top-k 5
+```
+
+If `--openrouter-model` is omitted, OpenRouter uses the account default model. You can set a
+specific model with `--openrouter-model <model-id>` or `OPENROUTER_MODEL`.
 
 Run from a FASTA file:
 
