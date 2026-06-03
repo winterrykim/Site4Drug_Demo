@@ -4,6 +4,8 @@ This repository provides the inference demo and data for **Site4Drug**, an AI-ag
 
 You can run Site4Drug on a protein sequence to generate a ranked candidate table, evidence-backed rationale, risk flags, and a hydropathy/PTM/candidate-track visualization, as shown in the preview below.
 
+Our manuscript was accepted at the ICML 2026 Workshop on Generative and Agentic AI for Biology (GenBio), and publicly available at <https://arxiv.org/pdf/2606.01816>.
+
 ## Preview
 
 ![Site4Drug prediction report](docs/assets/prediction-report_jeongbin.png)
